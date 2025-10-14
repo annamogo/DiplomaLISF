@@ -28,11 +28,30 @@ def fourie_restore(coefs, T, fs, N, mode):
 ## To get rid of all meaningless spectral components, we need bandpass filter
 
 # butterworth bandpass filtr creation
-def my_butter(fq0, fs=0.5, peak_count=3, N=4):
+# - finds Wn as width of probability dencity peak 
+def my_butter(sig, fs=1, N=4, rel_h = 0.7, nperseg = 250):
+    # fs -sampling frequency
+
+    fxx, Pxx_den = signal.welch(np.real(sig), fs = fs, nperseg=nperseg)
+    fxx_len = len(fxx)
+    
+    peak = np.argmax(Pxx_den)
+    width = signal.peak_widths(Pxx_den,[peak], rel_height = rel_h)
+    
+    Wn = [width[2]*fs/2/(fxx_len-1), width[3]*fs/2/(fxx_len-1)]
+
+    btype = 'bandpass'
+
+    b, a  = signal.butter(N, Wn, btype, fs = fs)
+    return b, a
+    
+
+# shit butterworth bandpass filtr creation
+def my_butter_shit(fq0, fs=0.5, peak_count=3, N=4):
 
     if peak_count == 0:
         peak_count = 1
-    Wn = [fq0*(peak_count), min(fq0*(peak_count)*3, fs/2.01)]
+    Wn = [fq0*(peak_count), min(fq0*(peak_count)*2, fs/2.01)]
     #print(Wn)
     btype = 'bandpass'
 
