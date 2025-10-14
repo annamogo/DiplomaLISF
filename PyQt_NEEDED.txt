@@ -1,0 +1,57 @@
+libxcb-cursor.so.0
+libxcb-icccm.so.4
+libxcb-icccm4:amd64: /usr/lib/x86_64-linux-gnu/libxcb-icccm.so.4.0.0
+libxcb-icccm4:amd64: /usr/lib/x86_64-linux-gnu/libxcb-icccm.so.4
+libxcb-util.so.1
+libxcb-util1:amd64: /usr/lib/x86_64-linux-gnu/libxcb-util.so.1.0.0
+libxcb-util1:amd64: /usr/lib/x86_64-linux-gnu/libxcb-util.so.1
+libxcb-image.so.0
+libxcb-image0:amd64: /usr/lib/x86_64-linux-gnu/libxcb-image.so.0.0.0
+libxcb-image0:amd64: /usr/lib/x86_64-linux-gnu/libxcb-image.so.0
+libxcb-keysyms.so.1
+libxcb-keysyms1:amd64: /usr/lib/x86_64-linux-gnu/libxcb-keysyms.so.1.0.0
+libxcb-keysyms1:amd64: /usr/lib/x86_64-linux-gnu/libxcb-keysyms.so.1
+libxcb-randr.so.0
+libxcb-randr0:amd64: /usr/lib/x86_64-linux-gnu/libxcb-randr.so.0.1.0
+libxcb-randr0:amd64: /usr/lib/x86_64-linux-gnu/libxcb-randr.so.0
+libxcb-render.so.0
+libxcb-render0:amd64: /usr/lib/x86_64-linux-gnu/libxcb-render.so.0.0.0
+libxcb-render0:amd64: /usr/lib/x86_64-linux-gnu/libxcb-render.so.0
+libxcb-render-util.so.0
+libxcb-render-util0:amd64: /usr/lib/x86_64-linux-gnu/libxcb-render-util.so.0.0.0
+libxcb-render-util0:amd64: /usr/lib/x86_64-linux-gnu/libxcb-render-util.so.0
+libxcb-shape.so.0
+libxcb-shape0:amd64: /usr/lib/x86_64-linux-gnu/libxcb-shape.so.0.0.0
+libxcb-shape0:amd64: /usr/lib/x86_64-linux-gnu/libxcb-shape.so.0
+libxcb-shm.so.0
+libxcb-shm0:amd64: /usr/lib/x86_64-linux-gnu/libxcb-shm.so.0.0.0
+libxcb-shm0:amd64: /usr/lib/x86_64-linux-gnu/libxcb-shm.so.0
+libxcb-sync.so.1
+libxcb-sync1:amd64: /usr/lib/x86_64-linux-gnu/libxcb-sync.so.1.0.0
+libxcb-sync1:amd64: /usr/lib/x86_64-linux-gnu/libxcb-sync.so.1
+libxcb.so.1
+libxcb1:amd64: /usr/lib/x86_64-linux-gnu/libxcb.so.1.1.0
+libxcb1:amd64: /usr/lib/x86_64-linux-gnu/libxcb.so.1
+libxcb-xfixes.so.0
+libxcb-xfixes0:amd64: /usr/lib/x86_64-linux-gnu/libxcb-xfixes.so.0.0.0
+libxcb-xfixes0:amd64: /usr/lib/x86_64-linux-gnu/libxcb-xfixes.so.0
+libxcb-xkb.so.1
+libxcb-xkb1:amd64: /usr/lib/x86_64-linux-gnu/libxcb-xkb.so.1.0.0
+libxcb-xkb1:amd64: /usr/lib/x86_64-linux-gnu/libxcb-xkb.so.1
+libX11-xcb.so.1
+libx11-xcb1:amd64: /usr/lib/x86_64-linux-gnu/libX11-xcb.so.1.0.0
+libx11-xcb1:amd64: /usr/lib/x86_64-linux-gnu/libX11-xcb.so.1
+
+
+
+for l in /home/annamogo/PyProject/DiplomaLISF/venv/lib/python3.12/site-packages/PyQt6/Qt6/lib/*.so*; 
+do   
+echo $l; 
+objdump -p $l | grep NEEDED | sed "s/^/\t"/;  
+done 
+| grep xcb | awk '{print $2}' | while read lib; 
+do 
+echo $lib; 
+dlocate $lib; 
+done 
+> PyQt_NEEDED.txt
