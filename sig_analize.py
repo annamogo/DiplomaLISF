@@ -60,7 +60,7 @@ def my_butter_shit(fq0, fs=0.5, peak_count=3, N=4):
     
 # butterworth highpass filtr creation
 # to cut off low frequences for better peak count
-def my_butter_high(fq0, nl = 3, fs=0.5, N=4):
+def my_butter_high(fq0, nl = 3, fs=1, N=4):
     f_cut = min(fq0*nl, fs/2.01)
     #print(f_cut)
     btype = 'highpass'
