@@ -39,7 +39,7 @@ def choose_multy(img_path_list, json_path, mode = 'individual'):
                 json.dump(list(img), f)
                 f.write(',')
         elif mode == 'common':
-            r = get_area_box(img_path_list[0])
+            r = get_area_box(img_path_list[1])
             for img_path in img_path_list:
                 img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
                 img_cropped = img[int(r[1]):int(r[1]+r[3]), 
@@ -47,6 +47,8 @@ def choose_multy(img_path_list, json_path, mode = 'individual'):
 
                 img_sum = np.sum(img_cropped, axis=0)
                 img_avg = (img_sum - np.mean(img_sum))
+                #img_avg = [int(s) for s in img_sum]
+                #print(img_avg)
                 json.dump(list(img_avg), f)
                 f.write(',')
                 

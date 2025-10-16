@@ -90,6 +90,59 @@ def peak_counter(sig):
     return peak_count, mean_period
 
 
+# function applyes butterwort filter  using my_butter
+# computes instant phase using hilbert transform
+# plots filtered signal, instant phase and 
+# in the third column displays the probability dencity distribution along with
+# Wn for the filter and filter responce 
+def plot_flt_res(sig_list, fs, rel_h, nperseg_c):
+
+    img_count = len(sig_list)
+    sig_len = len(sig_list[0])
+
+    sig_x = np.arange(sig_len)/fs
+
+    
+    fig, ax = plt.subplots(img_count, 3, figsize=(12,4*img_count))
+    i = 0
+
+    ph_vel = []
+
+    for sig_y in sig_list:
+
+
+        fxx, Pxx_den = signal.welch(np.real(sig_y), fs = fs, nperseg=int(sig_len*nperseg_c)) # sampling frequency
+        fxx_l = len(fxx)
+
+        den_peak = np.argmax(Pxx_den)
+        res = signal.peak_widths(Pxx_den, [den_peak], rel_height=rel_h)
+        Wn = [res[2]*0.5*fs/fxx_l,res[3]*0.5*fs/fxx_l]
+    
+        b, a = my_butter(sig_y, N=4, fs=fs, rel_h=rel_h, nperseg=int(sig_len*nperseg_c))# sampling frequency
+        w, h = signal.freqz(b, a, fs = fs)
+        sig_flt = signal.filtfilt(b, a, sig_y, method='gust') 
+
+
+        ax[i][0].plot(sig_x, sig_flt)
+
+
+        anal_y = signal.hilbert(np.real(sig_flt))
+        #instant_phase = np.unwrap(np.angle(anal_y))
+        instant_phase = np.angle(anal_y)
+        ph_vel.append(phase_vel(instant_phase[5:-5], dt = 1/fs))
+
+        ax[i][1].plot(sig_x, instant_phase)
+        ax[i][1].set_title(f" phase_vel: {ph_vel[i]}")
+
+        ax[i][2].plot(fxx, Pxx_den/np.max(Pxx_den))
+        ax[i][2].hlines(res[1]/np.max(Pxx_den), *Wn, color= 'C2')
+        ax[i][2].plot(w, np.abs(h))
+        ax[i][2].set_xlim(-0.01, 0.75)
+
+        i = i+1
+
+    return ph_vel
+
 def analize_signal(sig, dt):
     # sig - original signal
     # dt - discritization step
