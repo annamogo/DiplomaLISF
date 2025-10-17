@@ -127,8 +127,8 @@ def plot_flt_res(sig_list, fs, rel_h, nperseg_c):
 
 
         anal_y = signal.hilbert(np.real(sig_flt))
-        #instant_phase = np.unwrap(np.angle(anal_y))
-        instant_phase = np.angle(anal_y)
+        instant_phase = np.unwrap(np.angle(anal_y))
+        #instant_phase = np.angle(anal_y)
         ph_vel.append(phase_vel(instant_phase[5:-5], dt = 1/fs))
 
         ax[i][1].plot(sig_x, instant_phase)
