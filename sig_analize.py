@@ -117,6 +117,9 @@ def plot_flt_res(sig_list, fs, rel_h, nperseg_c):
         den_peak = np.argmax(Pxx_den)
         res = signal.peak_widths(Pxx_den, [den_peak], rel_height=rel_h)
         Wn = [res[2]*0.5*fs/fxx_l,res[3]*0.5*fs/fxx_l]
+        if Wn[0] >= Wn[1]:
+            print(f"Window for signal is bad: {Wn}")
+            continue
     
         b, a = my_butter(sig_y, N=4, fs=fs, rel_h=rel_h, nperseg=int(sig_len*nperseg_c))# sampling frequency
         w, h = signal.freqz(b, a, fs = fs)
