@@ -1,6 +1,10 @@
 *~
 *.[oa]
 *.jpg
-/
-*/
+*.txt
+/data
+/area_effect
+/venv
+__*/
+.*/
 *.txt
