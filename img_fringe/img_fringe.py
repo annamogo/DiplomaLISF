@@ -3,12 +3,12 @@ from copy import deepcopy
 import cv2
 import os
 
+from .data_fringe import *
+
 class Img(object):
     def __init__(self, img = None):
-        if img:
-            self.img = img
-        else:
-            self.img = None
+        self.img = img
+        
 
     def store(self, img):
         self.img = img
@@ -28,9 +28,8 @@ class Img(object):
 
 
 class ImgFringe(Img):
-    def __init__(self, resolution = 0):
-        super(ImgFringe, self).__init__()
-        self.avg = None
+    def __init__(self, img = None, resolution = 0):
+        super().__init__(img)
         if resolution:
             self.resolution = resolution
         else:
@@ -38,10 +37,7 @@ class ImgFringe(Img):
 
     def set_resolution(self, resolution):
         self.resolution = resolution
-
-    def img_avg(self):
-        img_sum = np.sum(self.img, axis=0)
-        self.avg = (img_sum - np.mean(img_sum))
+        
 
     def copy(self):
         return deepcopy(self)
@@ -55,7 +51,7 @@ class ImgFringe(Img):
                 r = cv2.selectROI("select area", self.img)
             except:
                 cv2.destroyAllWindows()
-                raise Exception("Could not sucsessfully select area somewhy :{")
+                raise Exception("Could not sucsessfully select area")
             
             else:
                 cv2.destroyAllWindows()
@@ -71,6 +67,13 @@ class ImgFringe(Img):
         int(r[0]):int(r[0]+r[2])]
                
         self.img = cropped_img
+
+
+    def flatten(self):
+        img_sum = np.sum(self.img, axis=0)
+        avg = (img_sum - np.mean(img_sum))
+
+        return avg
 
 
 
@@ -91,7 +94,7 @@ class ImgFringeStack(object):
 
         
 
-    def read_multiple(self, path):
+    def read(self, path):
         img_path_list = [path + '/'+ f for f in os.listdir(path) if f.endswith('.jpg')]
         img_path_list.sort()
 
@@ -106,6 +109,14 @@ class ImgFringeStack(object):
         img_obj.store(img)
         self.img_stack.append(img_obj)
 
+    def append_obj(self, obj: ImgFringe):
+        self.img_stack.append(obj)
+
+    def clear(self):
+        self.img_stack = []
+        self.img_count = 0
+        self.resolution = 0
+
     def set_resolution(self, resolution, mode='all', number=None):
         if mode == 'all':
             self.resolution = resolution
@@ -119,10 +130,10 @@ class ImgFringeStack(object):
                                 not given or out of bounds")
         
 
-    def crop(self, mode ='common', inplace=True):
+    def crop(self, n = 0, mode ='common', inplace=True):
         # mode can be 'individual' or 'common'
         if mode == 'common':
-            rl = [self.img_stack[0].choose_area()]*self.img_count
+            rl = [self.img_stack[n].choose_area()]*self.img_count
         elif mode == 'individual':
             rl = [img.choose_area() for img in self.img_stack]
 
@@ -142,10 +153,21 @@ class ImgFringeStack(object):
             return cropped
 
     def show(self):
-        for img in self.img_stack:
-            cv2.imshow("Image Win", img.img)
+        for Img in self.img_stack:
+            cv2.imshow("Image Win", Img.img)
             cv2.waitKey(0)
         cv2.destroyAllWindows()
             
 
+    def flatten(self):
+        data = []
+        for Img in self.img_stack:
+            data.append(Img.flatten())
+
+        return data
+
+    def create_data(self):
+        data_obj = DataFringe(self.flatten(), self.resolution)        
+        return data_obj
+            
  
