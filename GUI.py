@@ -5,6 +5,7 @@ from PIL import Image, ImageTk
 import cv2
 
 from img_fringe.img_fringe import *
+from processing.processing import *
 
 import matplotlib
 matplotlib.use("TkAgg")
@@ -48,7 +49,7 @@ class MainWindow(Frame):
         
         # vars to hold objects, currently being analysed
         self.ImgStackObj = ImgFringeStack()
-        self.curr_img = 0
+        self.curr_img = None
         self.ImgObj = ImgFringe()
 
         self.ImgData = DataFringe()
@@ -111,6 +112,7 @@ class MainWindow(Frame):
         try:
             self.ImgObj.read(name)
         except:
+            raise Exception("Reading to ImgObj failed")
             return
 
         self.ImgStackObj.clear()
@@ -118,6 +120,9 @@ class MainWindow(Frame):
         self.ImgStackObj.append_obj(self.ImgObj)
         
         self.img_fr.update_img()
+
+        self.plt_fr.up_to_date_data = False
+
 
 
 
@@ -131,6 +136,8 @@ class MainWindow(Frame):
         self.ImgStackObj.read(name)
         
         self.img_fr.update_img()
+
+        self.plt_fr.up_to_date_data = False
 
 
 
@@ -157,12 +164,15 @@ class MainWindow(Frame):
         self.plt_fr.update_data()
         #self.res_fr.update_data()
 
+
     def flatten_curr_stack(self):
         data = [img_obj.flatten() for img_obj in self.ImgStackObj]
+    
+        self.ImgDataStack.from_array(data)
 
-        self.ImgDataStack.from_flatten(data)
+        self.plt_fr.update_data()
+
         
-
 
 
 class ShowImgFrame(Frame):
@@ -178,6 +188,10 @@ class ShowImgFrame(Frame):
         
         self.img = None
 
+    
+        self.label = Label(self, text = f"picture *** out of ***")
+        self.label.pack(pady=10)
+
         self.img_label = Label(self, image=self.img)
         self.img_label.pack(pady=10, padx=20)
 
@@ -186,6 +200,11 @@ class ShowImgFrame(Frame):
         self.next_button.pack(pady=10, padx=20)
 
  
+    def update_lbl(self):
+        new_text = f"picture {self.curr_img} out of {len(self.ImgStackObj.img_stack)}"
+        self.label.configure(text = new_text)
+
+        self.after(100, self.display_img)
 
     def update_img(self):
         self.ImgStackObj = self.p.ImgStackObj
@@ -194,6 +213,7 @@ class ShowImgFrame(Frame):
         self.img = self.ImgStackObj[self.curr_img].img
 
         self.display_img()
+        self.update_lbl()
         
 
     def display_img(self):
@@ -211,9 +231,14 @@ class ShowImgFrame(Frame):
         self.p.curr_img += 1
         if self.curr_img >= self.ImgStackObj.img_count:
             self.curr_img = 0
+            self.p.curr_img = 0
             
         self.img = self.ImgStackObj[self.curr_img].img
         self.display_img()
+        
+        self.update_lbl()
+
+        self.p.plt_fr.update_current()
 
     
 
@@ -226,10 +251,9 @@ class PlotSigFrame(Frame):
         self.ImgDataStack = self.p.ImgDataStack
         self.curr_img = self.p.curr_img
 
-        self.grid(row=1, column=0, padx=5, pady=5, sticky=NSEW)
+        self.up_to_date_data = False
 
-        self.label = Label(self, text="This place is for signal plot")
-        self.label.pack(pady=20)
+        self.grid(row=1, column=0, padx=5, pady=5, sticky=NSEW)
 
         self.button = Button(self, text="Plot flattened",
                              command=self.update_plot)
@@ -241,6 +265,12 @@ class PlotSigFrame(Frame):
     def update_data(self):
         self.ImgDataStack = self.p.ImgDataStack
         self.curr_img = self.p.curr_img
+        self.up_to_date_data = True
+        print(f"current image {self.curr_img}")
+
+    def update_current(self):
+        self.curr_img = self.p.curr_img
+        print(f"current image {self.curr_img}")
 
     def create_plot(self):
         self.fig = Figure(figsize=(3,2))
@@ -254,22 +284,26 @@ class PlotSigFrame(Frame):
         self.a.set_ylabel("relative intencity")
 
                 
-        self.canvas = FigureCanvasTkAgg(self.fig, self)
+        self.canvas = FigureCanvasTkAgg(self.fig, master=self)
         self.widget = self.canvas.get_tk_widget().pack(pady=20)
         #self.canvas.draw()
 
     def update_plot(self):
-        data_obj = self.ImgDataStack[self.curr_img]
 
-        x = np.arange(data_obj.pcount)
-        y = data_obj.data
-        
-        self.graph.set_data(x,y)
+        if self.up_to_date_data:
+            data_obj = self.ImgDataStack[self.curr_img]
 
-        self.a.relim()
-        self.a.autoscale_view(True,True,True)
-        
-        self.canvas.draw()
+            x = np.arange(data_obj.pcount)
+            y = data_obj.data
+            
+            self.graph.set_data(x,y)
+
+            self.a.relim()
+            self.a.autoscale_view(True,True,True)
+            
+            self.canvas.draw()
+
+            
 
 
 class ResultsFrame(Frame):
@@ -277,13 +311,127 @@ class ResultsFrame(Frame):
     def __init__(self, parent, **config):
         super().__init__(parent, **config)
         self.p = parent
-        self.ImgData = self.p.ImgData
+        self.ImgDataStack = self.p.ImgDataStack
+
+        self.DataStackFLT = self.ImgDataStack
 
         self.grid(row=0, column=1, rowspan=2,
                   padx=5, pady=5, sticky=NSEW)
 
         self.label = Label(self, text="This place is dedicated to results")
-        self.label.pack(pady=20)
+        self.label.grid(row=0, column=0, columnspan=2)
+        
+
+        self.button_hpass = Button(self, text="High Pass Filter",
+                                   command = self.high_pass_flt)
+        self.button_hpass.grid(row=1,column=0)
+
+        self.button_plot = Button(self, text="plot",
+                                  command=lambda: self.plot(self.create_window()))
+        self.button_plot.grid(row=1, column=1)
+
+
+        self.button_hpass = Button(self, text="Band Pass Filter",
+                                   command = self.band_pass_flt)
+        self.button_hpass.grid(row=2,column=0)
+
+        self.button_hpass = Button(self, text="plot Spectral peaks",
+                                   command = lambda: self.plot_spectr(self.create_window()))
+        self.button_hpass.grid(row=3,column=1)
+
+        self.button_hpass = Button(self, text="plot Phase Velocity graph",
+                                   command = lambda: self.plot_phvel(self.create_window()))
+        self.button_hpass.grid(row=4,column=1)
+
+ 
+    def high_pass_flt(self):
+        
+        my_high = HighPass()
+        data_flt = my_high.process_stack(self.DataStackFLT)
+
+        self.DataStackFLT.from_array(data_flt)
+
+    def band_pass_flt(self):
+
+        my_band = BandPass()
+        data_flt = my_band.process_stack(self.DataStackFLT)
+
+        self.DataStackFLT.from_array(data_flt)
+        
+
+
+    def plot(self, parent):
+
+        N = len(self.DataStackFLT)
+        
+        fig = Figure()
+        fig.suptitle("Filtered signal")
+
+        for i in range(N):
+            data_obj = self.DataStackFLT[i]
+
+            x = np.arange(data_obj.pcount)
+            y = data_obj.data
+            
+            ax = fig.add_subplot(N,1,i+1)
+
+            graph, = ax.plot([],[],'b-')
+
+            graph.set_data(x,y)
+
+            ax.relim()
+            ax.autoscale_view(True,True,True)
+
+
+        self.canvas = FigureCanvasTkAgg(fig, master=parent)
+        self.canvas.draw()
+        self.widget = self.canvas.get_tk_widget().pack(pady=20)
+
+    def plot_spectr(self, parent):
+        N = len(self.DataStackFLT)
+
+        band = BandPass()
+
+        fig = Figure()
+        fig.suptitle("Welch spectral dencity results and chosen peak")
+
+        for i in range(N):
+            sig = self.DataStackFLT[i].data
+            
+            ax = fig.add_subplot(N,1,i+1)
+            ax.set_xlim(-0.01, 0.5)
+
+            for line in band.plot_welch_peaks(sig):
+                ax.add_line(line)
+                
+            
+
+        self.canvas = FigureCanvasTkAgg(fig, master=parent)
+        self.canvas.draw()
+        self.widget = self.canvas.get_tk_widget().pack(pady=20)
+
+    def plot_phvel(self, parent):
+        # we need to send here time perionds between the samples
+        dt = 1 # time periods
+        N = len(self.DataStackFLT)
+        x = np.arange(N)*dt
+        y = self.DataStackFLT.get_phase_vel()
+        
+
+        fig = Figure()
+        fig.suptitle("Phase velocity from time")
+
+        ax = fig.add_subplot(1,1,1)
+        ax.plot(x,1/np.array(y))
+
+        canvas = FigureCanvasTkAgg(fig, master=parent)
+        canvas.draw()
+        canvas.get_tk_widget().pack(pady=20)
+    
+
+    def create_window(self):
+        win = Toplevel(self)
+        return win
 
 
         

@@ -17,7 +17,18 @@ class Img(object):
         cv2.imwrite(path, self.img)
 
     def read(self, path):
-        self.img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+        img = None
+        
+        try:
+            img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+        except:
+            raise Exception("Failed to read image from given path.")
+
+        if img is None:
+            raise Exception("The result of read is empty.")
+        else:
+            self.img = img
+            
 
     def show(self):
         cv2.imshow('image window', self.img)
@@ -91,6 +102,9 @@ class ImgFringeStack(object):
 
     def __getitem__(self, key):
         return self.img_stack[key]
+
+    def __len__(self):
+        return len(self.img_stack)
 
         
 
