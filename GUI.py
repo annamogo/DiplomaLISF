@@ -98,8 +98,7 @@ class MainWindow(Frame):
                               command=self.flatten_curr_img)
         data_menu.add_command(label="Flattern all images in the stack",
                               command=self.flatten_curr_stack)
-        data_menu.add_separator()
-        data_menu.add_command(label="Plot flattened data")
+
         
 
     def read_fringe_img(self):
@@ -111,9 +110,8 @@ class MainWindow(Frame):
 
         try:
             self.ImgObj.read(name)
-        except:
-            raise Exception("Reading to ImgObj failed")
-            return
+        except Exception as e:
+            print(f"{e}: reading to object failed.")
 
         self.ImgStackObj.clear()
         self.curr_img = 0
@@ -154,9 +152,10 @@ class MainWindow(Frame):
 
 
     def flatten_curr_img(self):
-        data = self.ImgStackObj[self.curr_img].flatten()
+        #data = self.ImgStackObj[self.curr_img].flatten()
         
-        self.ImgData.store(data)
+        #self.ImgData.store(data)
+        self.ImgData = self.ImgStackObj[self.curr_img].create_data()
 
         self.ImgDataStack.clear()
         self.ImgDataStack.append_obj(self.ImgData)
@@ -166,11 +165,13 @@ class MainWindow(Frame):
 
 
     def flatten_curr_stack(self):
-        data = [img_obj.flatten() for img_obj in self.ImgStackObj]
+        #data = [img_obj.flatten() for img_obj in self.ImgStackObj]
     
-        self.ImgDataStack.from_array(data)
+        #self.ImgDataStack.from_array(data)
+        self.ImgDataStack = self.ImgStackObj.create_data_stack()
 
         self.plt_fr.update_data()
+        self.res_fr.update_data()
 
         
 
@@ -313,7 +314,8 @@ class ResultsFrame(Frame):
         self.p = parent
         self.ImgDataStack = self.p.ImgDataStack
 
-        self.DataStackFLT = self.ImgDataStack
+        self.DataStackFLT = self.ImgDataStack.copy()
+        self.N = self.DataStackFLT.sig_count
 
         self.grid(row=0, column=1, rowspan=2,
                   padx=5, pady=5, sticky=NSEW)
@@ -344,36 +346,41 @@ class ResultsFrame(Frame):
         self.button_hpass.grid(row=4,column=1)
 
  
+    def update_data(self):
+        self.ImgDataStack = self.p.ImgDataStack
+
+        self.DataStackFLT = self.ImgDataStack.copy()
+        self.N = self.DataStackFLT.sig_count
+        
+
     def high_pass_flt(self):
         
         my_high = HighPass()
         data_flt = my_high.process_stack(self.DataStackFLT)
 
-        self.DataStackFLT.from_array(data_flt)
+        self.DataStackFLT = data_flt
 
     def band_pass_flt(self):
 
         my_band = BandPass()
         data_flt = my_band.process_stack(self.DataStackFLT)
 
-        self.DataStackFLT.from_array(data_flt)
+        self.DataStackFLT = data_flt
         
 
 
     def plot(self, parent):
 
-        N = len(self.DataStackFLT)
-        
         fig = Figure()
         fig.suptitle("Filtered signal")
 
-        for i in range(N):
+        for i in range(self.N):
             data_obj = self.DataStackFLT[i]
 
             x = np.arange(data_obj.pcount)
             y = data_obj.data
             
-            ax = fig.add_subplot(N,1,i+1)
+            ax = fig.add_subplot(self.N,1,i+1)
 
             graph, = ax.plot([],[],'b-')
 
@@ -388,17 +395,16 @@ class ResultsFrame(Frame):
         self.widget = self.canvas.get_tk_widget().pack(pady=20)
 
     def plot_spectr(self, parent):
-        N = len(self.DataStackFLT)
 
         band = BandPass()
 
         fig = Figure()
         fig.suptitle("Welch spectral dencity results and chosen peak")
 
-        for i in range(N):
+        for i in range(self.N):
             sig = self.DataStackFLT[i].data
             
-            ax = fig.add_subplot(N,1,i+1)
+            ax = fig.add_subplot(self.N,1,i+1)
             ax.set_xlim(-0.01, 0.5)
 
             for line in band.plot_welch_peaks(sig):
@@ -413,8 +419,8 @@ class ResultsFrame(Frame):
     def plot_phvel(self, parent):
         # we need to send here time perionds between the samples
         dt = 1 # time periods
-        N = len(self.DataStackFLT)
-        x = np.arange(N)*dt
+
+        x = np.arange(self.N)*dt
         y = self.DataStackFLT.get_phase_vel()
         
 
