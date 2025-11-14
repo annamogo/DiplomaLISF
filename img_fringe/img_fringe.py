@@ -5,12 +5,19 @@ import os
 
 from .data_fringe import *
 
+from typing import Tuple
+
 class Img(object):
     def __init__(self, img = None):
+        self._validate_img(img)
         self.img = img
         
+    def _validate_img(self, img):
+        if not isinstance(img, np.ndarray) and img is not None:
+            raise ValueError("img must be 2D numpy array")
 
     def store(self, img):
+        self._validate_img(img)
         self.img = img
 
     def write(self, path):
@@ -26,8 +33,8 @@ class Img(object):
 
         if img is None:
             raise Exception("The result of read is empty.")
-        else:
-            self.img = img
+       
+        self.img = img
             
 
     def show(self):
@@ -39,21 +46,34 @@ class Img(object):
 
 
 class ImgFringe(Img):
-    def __init__(self, img = None, resolution = 0):
+    def __init__(self, img = None, resolution = 1):
         super().__init__(img)
-        if resolution:
-            self.resolution = resolution
-        else:
-            self.resolution = 0
+        
+        self._validate_resolution(resolution)
 
-    def set_resolution(self, resolution):
+        self.resolution = resolution
+
+    def _validate_resolution(self, resolution):
+        err_text = "resolution must be positive float or integer"
+        try: 
+            resolution = float(resolution)
+            if resolution <= 0 :
+                raise ValueError(err_text)
+            
+        except ValueError as e:
+            print(f"{e}: {err_text}")
+            
+
+    def set_resolution(self, resolution: float|int) -> None:
+        
+        self._validate_resolution(resolution)
         self.resolution = resolution
         
 
-    def copy(self):
+    def copy(self) -> 'ImgFringe':
         return deepcopy(self)
 
-    def choose_area(self):
+    def choose_area(self) -> Tuple[int,int,int,int]:
         
         if self.img is None:
             raise Exception("No image is stored in the Img object")
@@ -69,7 +89,7 @@ class ImgFringe(Img):
                 
                 return r
 
-    def crop(self, r = None):
+    def crop(self, r = None) -> None:
 
         if r is None:
             r = self.choose_area()
@@ -80,11 +100,18 @@ class ImgFringe(Img):
         self.img = cropped_img
 
 
-    def flatten(self):
+    def flatten(self) -> np.ndarray:
         img_sum = np.sum(self.img, axis=0)
         avg = (img_sum - np.mean(img_sum))
 
         return avg
+
+    def create_data(self) -> DataFringe:
+        Sig = DataFringe()
+        Sig.store(self.flatten())
+        Sig.set_res(self.resolution)
+
+        return Sig
 
 
 
@@ -92,24 +119,27 @@ class ImgFringe(Img):
 
 
 class ImgFringeStack(object):
-    def __init__(self, resolution = 0):
+    resolution: float|int
+    
+    def __init__(self, resolution = 1):
         self.img_stack = []
         self.img_count = 0
         if resolution:
             self.resolution = resolution
         else:
-            self.resolution = 0
+            self.resolution = 1
 
-    def __getitem__(self, key):
+    def __getitem__(self, key) -> ImgFringe:
         return self.img_stack[key]
 
-    def __len__(self):
-        return len(self.img_stack)
+    def __len__(self) -> int:
+        return self.img_count
 
         
 
-    def read(self, path):
-        img_path_list = [path + '/'+ f for f in os.listdir(path) if f.endswith('.jpg')]
+    def read(self, path: str) -> None:
+        img_path_list = [path + '/'+ f for f in os.listdir(path)
+                         if f.endswith('.jpg')]
         img_path_list.sort()
 
         for img_path in img_path_list:
@@ -118,20 +148,21 @@ class ImgFringeStack(object):
             self.img_stack.append(img)
             self.img_count += 1
 
-    def append_img(self, img):
+    def append_img(self, img) -> None:
         img_obj = ImgFringe()
         img_obj.store(img)
         self.img_stack.append(img_obj)
 
-    def append_obj(self, obj: ImgFringe):
+    def append(self, obj: ImgFringe) -> None:
         self.img_stack.append(obj)
 
-    def clear(self):
+    def clear(self) -> None:
         self.img_stack = []
         self.img_count = 0
         self.resolution = 0
 
-    def set_resolution(self, resolution, mode='all', number=None):
+    def set_resolution(self, resolution, mode='all', number=None
+                       ) -> None:
         if mode == 'all':
             self.resolution = resolution
             for Img in self.img_stack:
@@ -144,7 +175,9 @@ class ImgFringeStack(object):
                                 not given or out of bounds")
         
 
-    def crop(self, n = 0, mode ='common', inplace=True):
+    def crop(self, n = 0, mode ='common', inplace=True
+             ) -> 'ImgFringeStack':
+        
         # mode can be 'individual' or 'common'
         if mode == 'common':
             rl = [self.img_stack[n].choose_area()]*self.img_count
@@ -163,25 +196,32 @@ class ImgFringeStack(object):
                         int(r[0]):int(r[0]+r[2])]
 
                 cropped.append_img(img_cropped)
+
+            cropped.set_resolution(resolution = self.resolution)
                 
             return cropped
 
-    def show(self):
+    def show(self) -> None:
         for Img in self.img_stack:
             cv2.imshow("Image Win", Img.img)
             cv2.waitKey(0)
         cv2.destroyAllWindows()
             
 
-    def flatten(self):
+    def flatten(self) -> np.ndarray:
         data = []
         for Img in self.img_stack:
             data.append(Img.flatten())
 
         return data
 
-    def create_data(self):
-        data_obj = DataFringe(self.flatten(), self.resolution)        
-        return data_obj
+    def create_data_stack(self) -> 'DataFringeStack':
+        Data = DataFringeStack(self.resolution)
+
+        for Img in self.img_stack:
+            Sig = Img.create_data()
+            Data.append(Sig)
+        
+        return Data
             
  

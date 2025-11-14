@@ -1,9 +1,12 @@
 import numpy as np
 from scipy import signal
+
 from img_fringe.data_fringe import *
 
 from matplotlib.lines import Line2D
 import matplotlib.pyplot as plt
+
+from typing import Tuple
 
 class Process(object):
     def __init__(self):
@@ -12,21 +15,36 @@ class Process(object):
     def process(self):
         pass
 
-    def process_stack(self, data: DataFringeStack):
+    def process_stack(self, data: DataFringeStack) -> DataFringeStack:
         
         data_flt = []
-        for sig in data:
+        
+        if not isinstance(data, DataFringeStack):
+            raise TypeError("Stack given for processing\
+                            is not an instance of DataFringeStack")
+
+        DataFlt = DataFringeStack()
+        
+        for Sig in data:
             try:
-                sig_flt = self.process(sig)
+                SigFlt = self.process(Sig)
             except:
                 raise Exception
             
-            data_flt.append(sig_flt)
+            DataFlt.append(SigFlt)
 
-        return data_flt
+        DataFlt.set_resolution(data.resolution)
+
+        return DataFlt
 
 
 class  HighPass(Process):
+    fs: float|int
+    nl: int
+    border: int
+    method: str
+
+
     def __init__(self, fs = 1, nl = 2, border = 4, method = 'gust'):
         self.fs = fs # sampling frequency
         self.nl = nl # minimum number of peaks that can be present in the signal
@@ -34,17 +52,27 @@ class  HighPass(Process):
         self.btype = 'highpass' # type of butter filter
         self.method = method # method of signal.filtfilt
 
-    def process(self, data: DataFringe):
-        f_min = self.nl/data.pcount
+    def process(self, Sig: DataFringe) -> DataFringe:
+        SigFlt = Sig.copy()
+        
+        f_min = self.nl/Sig.pcount
         b, a = signal.butter(self.border, f_min, btype=self.btype, fs = self.fs)
         
-        data_flt = signal.filtfilt(b, a, data.data, method=self.method)
-        return data_flt
+        sig_flt = signal.filtfilt(b, a, Sig.data, method=self.method)
+        SigFlt.store(sig_flt)
+        
+        return SigFlt
 
 
 
 
 class BandPass(Process):
+    fs: float|int
+    border: int
+    method: str
+    rel_h: float|int
+    nperseg_c: float|int
+    
     def __init__(self, fs = 1, border = 4, method='gust', rel_h = 0.7, nperseg_c = 1):
         self.fs = fs  # fs -sampling frequency
         self.border = border
@@ -54,7 +82,7 @@ class BandPass(Process):
         self.nperseg_c = nperseg_c
 
 
-    def plot_welch_peaks(self, sig):
+    def plot_welch_peaks(self, sig: list[float]) -> Tuple[Line2D, Line2D]:
 
         sig_len = len(sig)
         fxx, Pxx_den = signal.welch(np.real(sig), fs = self.fs, nperseg=self.nperseg_c*sig_len)
@@ -68,13 +96,12 @@ class BandPass(Process):
 
         line1 = Line2D(fxx, Pxx_den/np.max(Pxx_den))
         line2 = Line2D(np.linspace(*Wn, 10), [width[1]/np.max(Pxx_den)]*10)
-        #line3 = Line2D(w, np.abs(h))
         
 
         return line1, line2
         
 
-    def my_butter(self, sig):
+    def my_butter(self, sig: list[float]) -> Tuple[float, float]|None:
         sig_len = len(sig)
     
         fxx, Pxx_den = signal.welch(np.real(sig), fs = self.fs, nperseg=self.nperseg_c*sig_len)
@@ -88,14 +115,20 @@ class BandPass(Process):
         try:           
             b, a  = signal.butter(self.border, Wn, self.btype, fs = self.fs)
             return b, a
+        
         except Exception as err:
             print(f"Unexpected {err=}, {type(err)=}")
-            return
+            return 
             
-    def process(self, data: DataFringe):
-        b, a = self.my_butter(data.data)
-        sig_flt = signal.filtfilt(b, a, data.data, method=self.method)
-        return sig_flt
+    def process(self, Sig: DataFringe) -> DataFringe:
+        SigFlt = Sig.copy()
+        
+        b, a = self.my_butter(sig.data)
+        
+        sig_flt = signal.filtfilt(b, a, sig.data, method=self.method)
+        SigFlt.store(sig_flt)
+        
+        return SigFlt
 
 
         
