@@ -1,13 +1,10 @@
 import numpy as np
 import copy
 
-from directions import Direct, DirectList
-
 
 class HistAvg:
 
     def __init__(self, L=0):
-        print(L)
         self.L = L
         self.g = self._g_linear()
     
@@ -40,13 +37,13 @@ class HistAvg:
     
     def _average_hist_sample(self, points: list) -> float:
         histogramm = self._hist(points)
-        hist_range = [i for i in range(255)]
+        hist_range = [i for i in range(256)]
         L = len(points)
     
         avr_cp = round(sum([i*h for i, h in zip(hist_range, histogramm)])/L)
         return avr_cp
     
-    def process(self, line: list[list]) -> list[list]:
+    def process_line(self, line: list) -> list:
         L = self.L
         
         seq_len = len(line)
@@ -65,29 +62,14 @@ class HistAvg:
             
         return new_line
 
+    def process(self, list_lines: list[list]) -> list[list]:
+        new_list_lines = []
 
-class HistAvgMulti(HistAvg):
-    def __init__(self, L=0):
-        super().__init__(L=L)
-
-
-    def process(self, dir_lists: DirectList, inplace=True) -> [list[list], None]:
-
-        if inplace:
-            for dir_list in dir_lists.dir_lists:
-                for line in dir_list.lines:
-                    line = super().process(line)
-                    
-            return None
+        for line in list_lines:
+            new_list_lines.append(self.process_line(line))
             
-        else:
-            new_dir_lists = DirectList(angles=dir_lists.angles)
-            for dir_list in dir_lists.dir_lists:
-                for line in dir_list.lines:
-                    new_line = super().process(line)
-                    new_dir_lists.dir_lists.append(new_line)
-                    
-            return new_dir_lists
+        return new_list_lines
+        
                 
 
 

@@ -19,20 +19,29 @@ class DirectList:
         self.dir_imgs = []
         self.angles = angles
 
-    def process(self, img):
+    def __iter__(self):
+        return iter(self.dir_lists)
+
+    def img_to_directions(self, img):
+        self.dir_lists = []
         for angle in self.angles:
             direction = Direct(angle)
-            direction.get_direction(img)
+            direction.img_to_direction(img)
             self.dir_lists.append(direction)
 
+    def process(self, L=3):
+        for dir_list in self.dir_lists:
+            dir_list.process(L=L)
+
     def lines_to_img(self) -> list[np.ndarray]:
+        self.dir_imgs = []
         for dir_list in self.dir_lists:
             self.dir_imgs.append(dir_list.lines_to_img())
 
     def show_imgs(self):
         n = len(self.angles)
         
-        plt.figure(figsize=[13,2*n])
+        plt.figure(figsize=[11,2.5*(n+2)//3])
 
         for i, img in enumerate(self.dir_imgs):
             plt.subplot((n+2)//3,3,i+1)
@@ -128,7 +137,7 @@ class Direct:
     
         return lines, points
 
-    def get_direction(self, img: np.ndarray) -> tuple[list[list[int]], list[list[int,int]]]:
+    def img_to_direction(self, img: np.ndarray) -> tuple[list[list[int]], list[list[int,int]]]:
         self.img_shape = img.shape
 
         lines = []
@@ -173,8 +182,10 @@ class Direct:
         
         return lines, points
 
-    def filter_dir(self, L:int = 3):
+    def process(self, L:int = 3):
         h_avg = HistAvg(L = L)
+
+        self.lines = h_avg.process(self.lines)
         
     
     def show(self) -> None:
