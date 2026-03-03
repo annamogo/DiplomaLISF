@@ -70,7 +70,7 @@ def my_butter_high(fq0, nl = 3, fs=1, N=4):
 
 
 def phase_vel(ins_ph, dt):
-    return np.mean(np.diff(ins_ph)/dt/2/np.pi)
+    return np.mean(np.diff(ins_ph)/dt)
 
 def auto_corr(sig, sig_point_num, dt):
     # signal - signal to find autocorrelation of
@@ -103,7 +103,7 @@ def plot_flt_res(sig_list, fs, rel_h, nperseg_c):
     sig_x = np.arange(sig_len)/fs
 
     
-    fig, ax = plt.subplots(img_count, 3, figsize=(12,4*img_count))
+    fig, ax = plt.subplots(img_count, 3, layout='constrained', figsize=(12,4*img_count))
     i = 0
 
     ph_vel = []
@@ -127,6 +127,10 @@ def plot_flt_res(sig_list, fs, rel_h, nperseg_c):
 
 
         ax[i][0].plot(sig_x, sig_flt)
+        ax[i][0].set_title(f"Обработанный сигнал, t = {(i+1)*10} c")
+        ax[i][0].set_xlabel("положение по оси X [px]")
+        ax[i][0].set_ylabel("интенсивность")
+        
 
 
         anal_y = signal.hilbert(np.real(sig_flt))
@@ -135,14 +139,22 @@ def plot_flt_res(sig_list, fs, rel_h, nperseg_c):
         ph_vel.append(phase_vel(instant_phase[5:-5], dt = 1/fs))
 
         ax[i][1].plot(sig_x, instant_phase)
-        ax[i][1].set_title(f" phase_vel: {ph_vel[i]}")
+        ax[i][1].set_title(f" фазовая скорость: {ph_vel[i]} \n ")
+        ax[i][1].set_title("фаза сигнала (развернутая)")
+        ax[i][1].set_xlabel("положение по оси X [px]")
+        ax[i][1].set_ylabel("фаза [рад]")
 
         ax[i][2].plot(fxx, Pxx_den/np.max(Pxx_den))
         ax[i][2].hlines(res[1]/np.max(Pxx_den), *Wn, color= 'C2')
         ax[i][2].plot(w, np.abs(h))
         ax[i][2].set_xlim(-0.01, 0.75)
 
+        ax[i][2].set_title("Нормировангая спектральная плотность и  \n  частотная характеристика фильтра ")
+        ax[i][2].set_xlabel("частота [1/px]")
+        ax[i][2].set_ylabel("амплитуда (нормированная)")
+
         i = i+1
+    plt.tight_layout()
 
     return ph_vel
 
