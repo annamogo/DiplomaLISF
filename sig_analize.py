@@ -72,9 +72,10 @@ def my_butter_high(fq0, nl = 3, fs=1, N=4):
 def phase_vel(ins_ph, dt):
     return np.mean(np.diff(ins_ph)/dt)
 
-def auto_corr(sig, sig_point_num, dt):
+def auto_corr(sig, dt):
     # signal - signal to find autocorrelation of
-    # sig_point_num - number of data points in signal
+    # dt - interval between points (not nesessary time)
+    sig_point_num = len(sig) # sig_point_num - number of data points in signal
     
     sig_cor = signal.correlate(sig, sig, mode = 'full')
     sig_cor_lag = signal.correlation_lags(sig_point_num, sig_point_num,  mode = 'full')*dt
@@ -95,6 +96,8 @@ def peak_counter(sig):
 # plots filtered signal, instant phase and 
 # in the third column displays the probability dencity distribution along with
 # Wn for the filter and filter responce 
+
+# returns: the rate at which phase increases with distance (proportional to the tangent of the angle of the leading edge wedge)
 def plot_flt_res(sig_list, fs, rel_h, nperseg_c):
 
     img_count = len(sig_list)
@@ -154,7 +157,6 @@ def plot_flt_res(sig_list, fs, rel_h, nperseg_c):
         ax[i][2].set_ylabel("амплитуда (нормированная)")
 
         i = i+1
-    plt.tight_layout()
 
     return ph_vel
 
