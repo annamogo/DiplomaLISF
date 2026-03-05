@@ -4,14 +4,112 @@ import numpy as np
 import cv2
 import json
 
-def choose_area(img_path):
+class Select(Object):
+
+    def __init__(self, img_path, win_name):
+        self.img = cv2.imread(img_path)            
+        self.img_line = []
+        self.win_name = win_name
+
+    def dump_to_json(self, json_path):
+        
+        
+
+class SelectLine(Select):
+
+    def __init__(self, img_path, win_name):
+        super().__init__(img_path, win_name)
+
+        self.cur_img = self.img.copy()
+        self.prev_img = self.img.copy()
+
+        self.line_points = []
+        self.points = []
+        self.point_num = 0
+        
+
+    def select_line_event(self, event, x, y, flags, param):
+        
+        if event == cv2.EVENT_LBUTTONDOWN:
+            
+    
+            if self.point_num < 2:
+                
+                if self.point_num == 0:
+                    cv2.circle(self.cur_img, (x, y), 2, (255, 255, 255), -1)
+                    cv2.circle(self.prev_img, (x, y), 2, (255, 255, 255), -1)
+                    
+                elif self.point_num == 1:
+                    cv2.line(self.cur_img, self.points[0], (x, y), (255, 255, 255), 1)
+                    
+                    cv2.circle(self.cur_img, (x, y), 2, (255, 255, 255), -1)
+                    
+                self.point_num += 1
+                self.points.append((x,y))
+                
+            print(f'{self.point_num}: {self.points}')
+
+
+    def get_end_points(self):
+        self.cur_img = self.img.copy()
+        self.prev_img = self.img.copy()
+        self.points = []
+        self.point_num = 0
+        
+        cv2.namedWindow(self.win_name)
+        cv2.setMouseCallback(self.win_name, self.select_line_event)
+
+        while True:
+            cv2.imshow(self.win_name, self.cur_img)
+            
+            key = cv2.waitKey(1) & 0xFF
+            if key in [27, 13]:
+                break
+            elif key == 8:
+                self.cur_img = self.prev_img
+                self.prev_img = self.img.copy()
+                if self.point_num > 0:
+                    self.points.pop()
+                    self.point_num -= 1
+                    
+                print(f'{self.point_num}: {self.points}')
+
+        cv2.destroyAllWindows()
+
+        return self.points
+
+    def get_line_points(self):
+
+        if self.point_num < 2:
+            self.get_end_points()
+            
+        (x1, y1), (x2, y2) = self.points
+        self.line_points = list(bresenham(x1, y1, x2, y2))
+        
+        return self.line_points
+
+    def select_line_from_img(self):
+
+        if not self.line_points:
+            self.get_line_points()
+            
+        x = [point[0] for point in self.line_points]
+        y = [point[1] for point in self.line_points]
+
+        self.img_line = self.img[y, x]
+        
+        return self.img_line
+
+
+def choose_area(img_path, r = None):
     img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
 
-    r = cv2.selectROI("select area", img)
+    if not r:
+        r = cv2.selectROI("select area", img)
+        cv2.destroyAllWindows()
+        
     cropped_img = img[int(r[1]):int(r[1]+r[3]), 
                     int(r[0]):int(r[0]+r[2])]
-
-    cv2.destroyAllWindows()
 
     img_sum = np.sum(cropped_img, axis=0)
     img_avg = (img_sum - np.mean(img_sum))
@@ -26,37 +124,27 @@ def get_area_box(img_path):
     cv2.destroyAllWindows()
     
     return r
-    
+
 
 def choose_multy(img_path_list, json_path, mode = 'individual'):
-
+    r = []
+    
     with open(json_path, 'w') as f:
         f.write('[')
 
-        if mode == 'individual':
-            for img_path in img_path_list:
-                img = choose_area(img_path)
-                json.dump(list(img), f)
-                f.write(',')
-        elif mode == 'common':
+        if mode == 'common':
             r = get_area_box(img_path_list[1])
-            for img_path in img_path_list:
-                img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
-                img_cropped = img[int(r[1]):int(r[1]+r[3]), 
-                                int(r[0]):int(r[0]+r[2])]
-
-                img_sum = np.sum(img_cropped, axis=0)
-                img_avg = (img_sum - np.mean(img_sum))
-                #img_avg = [int(s) for s in img_sum]
-                #print(img_avg)
-                json.dump(list(img_avg), f)
-                f.write(',')
-                
+            
+        for img_path in img_path_list:
+            img_avg = choose_area(img_path, r)
+            json.dump(list(img_avg), f)
+            f.write(',')          
 
         f.write('[]]')
-        
-        
+    
 
+        
+'''
 def normal_lim(mean, std, llim, ulim):
     val = np.random.normal(mean, std)
     return int(np.clip(val, llim, ulim))
@@ -136,3 +224,5 @@ def img_bunch_gen(image_path, N, dx0_lim, dy0_lim, dxl_lim, dyl_lim):
 
 
 #np.savetxt('signal.txt', img_avg, delimiter=' ')
+
+'''
