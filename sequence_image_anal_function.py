@@ -70,6 +70,7 @@ def filter_low_frq(sigs,
     # we will use san.my_butter_high to create high pass filter
     sig_len = len(sigs[0])  # we chose areas of the same length for all pictures in the series from one run
     f_min = nl/sig_len
+    print(f_min)
     border = 4
     
     bh, ah = signal.butter(border, f_min, btype = 'highpass', fs=fs)

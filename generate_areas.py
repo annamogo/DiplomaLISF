@@ -4,7 +4,7 @@ import numpy as np
 import cv2
 import json
 
-class Select(Object):
+class Select(object):
 
     def __init__(self, img_path, win_name):
         self.img = cv2.imread(img_path)            
@@ -12,7 +12,7 @@ class Select(Object):
         self.win_name = win_name
 
     def dump_to_json(self, json_path):
-        
+        pass
         
 
 class SelectLine(Select):
