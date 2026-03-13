@@ -157,6 +157,39 @@ def plot_flt_res(sig_list, fs, rel_h, nperseg_c):
         ax[i][2].set_ylabel("амплитуда (нормированная)")
 
         i = i+1
+    plt.show()
+
+    return ph_vel
+
+def flt_res(sig_list, fs, rel_h, nperseg_c):
+    
+    sig_len = len(sig_list[0])
+    ph_vel = []
+
+    for sig in sig_list:
+
+
+        fxx, Pxx_den = signal.welch(np.real(sig), fs = fs, nperseg=int(sig_len*nperseg_c)) # sampling frequency
+        fxx_l = len(fxx)
+
+        den_peak = np.argmax(Pxx_den)
+        res = signal.peak_widths(Pxx_den, [den_peak], rel_height=rel_h)
+        Wn = [res[2]*0.5*fs/fxx_l,res[3]*0.5*fs/fxx_l]
+        #if Wn[0] >= Wn[1]:
+            #print(f"Window for signal is bad: {Wn}")
+            #continue
+    
+        b, a = my_butter(sig, N=4, fs=fs, rel_h=rel_h, nperseg=int(sig_len*nperseg_c))# sampling frequency
+        w, h = signal.freqz(b, a, fs = fs)
+        sig_flt = signal.filtfilt(b, a, sig, method='gust') 
+
+
+        anal_y = signal.hilbert(np.real(sig_flt))
+        instant_phase = np.unwrap(np.angle(anal_y))
+        #instant_phase = np.angle(anal_y)
+        ph_vel.append(phase_vel(instant_phase[5:-5], dt = 1/fs))
+
+
 
     return ph_vel
 
