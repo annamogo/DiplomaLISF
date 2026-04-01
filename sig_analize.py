@@ -110,6 +110,7 @@ def plot_flt_res(sig_list, fs, rel_h, nperseg_c):
     i = 0
 
     ph_vel = []
+    phase = []
 
     for sig_y in sig_list:
 
@@ -130,7 +131,7 @@ def plot_flt_res(sig_list, fs, rel_h, nperseg_c):
 
 
         ax[i][0].plot(sig_x, sig_flt)
-        ax[i][0].set_title(f"Обработанный сигнал, t = {(i+1)*10} c")
+        ax[i][0].set_title(f"Обработанный сигнал,\n t = {(i+6)*10} c")
         ax[i][0].set_xlabel("положение по оси X [px]")
         ax[i][0].set_ylabel("интенсивность")
         
@@ -140,9 +141,10 @@ def plot_flt_res(sig_list, fs, rel_h, nperseg_c):
         instant_phase = np.unwrap(np.angle(anal_y))
         #instant_phase = np.angle(anal_y)
         ph_vel.append(phase_vel(instant_phase[5:-5], dt = 1/fs))
+        phase.append(instant_phase[5:-5])
 
-        ax[i][1].plot(sig_x, instant_phase)
-        ax[i][1].set_title(f" фазовая скорость: {ph_vel[i]} \n ")
+        ax[i][1].plot(sig_x, instant_phase,'+')
+        #ax[i][1].set_title(f" фазовая скорость: {ph_vel[i]} \n ")
         ax[i][1].set_title("фаза сигнала (развернутая)")
         ax[i][1].set_xlabel("положение по оси X [px]")
         ax[i][1].set_ylabel("фаза [рад]")
@@ -150,16 +152,16 @@ def plot_flt_res(sig_list, fs, rel_h, nperseg_c):
         ax[i][2].plot(fxx, Pxx_den/np.max(Pxx_den))
         ax[i][2].hlines(res[1]/np.max(Pxx_den), *Wn, color= 'C2')
         ax[i][2].plot(w, np.abs(h))
-        ax[i][2].set_xlim(-0.01, 0.75)
+        ax[i][2].set_xlim(-0.01, 0.5)
 
-        ax[i][2].set_title("Нормировангая спектральная плотность и  \n  частотная характеристика фильтра ")
+        ax[i][2].set_title("Нормированная спектральная плотность и  \n  частотная характеристика фильтра ")
         ax[i][2].set_xlabel("частота [1/px]")
         ax[i][2].set_ylabel("амплитуда (нормированная)")
 
         i = i+1
     plt.show()
 
-    return ph_vel
+    return ph_vel, phase
 
 def flt_res(sig_list, fs, rel_h, nperseg_c):
     

@@ -55,9 +55,22 @@ def create_many_jsons(jsons_dir, # premade directory, where data will be stored
         ga.choose_multy(img_paths, json_path, mode='common')
 
 
-def load_imgs_from_json(json_path):
+def load_imgs_from_json(json_path, show=True):
     with open(json_path,'r') as f:
         imgs = json.load(f)[:-1]
+
+    if show:
+        img_count = len(imgs)
+        row_count = (img_count+2)//3
+
+        fig, ax = plt.subplots(row_count, 3, layout='constrained',figsize=(12, 4*row_count), sharex=False, sharey=False)
+
+        for i in range(img_count):
+            ax[i//3][i%3].plot(imgs[i])
+            ax[i//3][i%3].set_title(f"\n Необработанный сигнал, \n t = {(i+6)*10} c")#номер: {i}")
+            ax[i//3][i%3].set_xlabel("положение по оси X [px]")
+            ax[i//3][i%3].set_ylabel("интенсивность")
+            
     return imgs
 
 
@@ -178,10 +191,13 @@ def plot_phase_vel(
         phase_vel_rev = []
             
         with open(file, 'r') as f:
+            t0, ph0 = f.readline().strip().split(' ')
+            time_f.append(int(t0))
+            phase_vel_rev.append(0)
             for line in f:
                 t, ph = line.strip().split(' ')
                 time_f.append(int(t))
-                phase_vel_rev.append(float(ph))
+                phase_vel_rev.append(float(ph)-float(ph0))
         
         slope, intercept = np.polyfit(time_f, phase_vel_rev, 1)
         phase_vel_line.append([time_f, phase_vel_rev, np.array(time_f)*slope + intercept])
@@ -193,7 +209,8 @@ def plot_phase_vel(
     plt.legend()
    #plt.title('Зависимость обратной скорости приращения фазы \n сигнала поперек интерференционных полос от времени.')
     plt.xlabel('t(сек)')
-    plt.ylabel(r'$({d \phi}/{dx_{px}})^{-1}$ (пиксель)')
+    plt.ylabel(r'$T_{инт}$ (пиксель)')
+    plt.title('Зависимость периода интерференции \n от время растекания капли \n при разных скоростях потока. ')
     plt.show()
 
     return slope, intercept

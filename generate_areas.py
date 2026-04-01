@@ -3,6 +3,8 @@
 import numpy as np
 import cv2
 import json
+import os
+import pathlib
 
 class Select(object):
 
@@ -140,6 +142,21 @@ def choose_multy(img_path_list, json_path, mode = 'individual'):
             json.dump(list(img_avg), f)
             f.write(',')          
 
+        f.write('[]]')
+
+def choose_multy_roi(img_path_list, roi, json_path):
+    json_dir = os.path.dirname(json_path)
+    if json_dir:
+        pathlib.Path(json_dir).mkdir(parents=True, exist_ok=True)
+    
+    with open(json_path, 'w') as f:
+        f.write('[')
+        
+        for img_path in img_path_list:
+            img_avg = choose_area(img_path, roi)
+            json.dump(list(img_avg), f)
+            f.write(',')
+            
         f.write('[]]')
     
 
