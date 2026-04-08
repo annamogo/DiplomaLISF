@@ -83,7 +83,7 @@ def filter_low_frq(sigs,
     # we will use san.my_butter_high to create high pass filter
     sig_len = len(sigs[0])  # we chose areas of the same length for all pictures in the series from one run
     f_min = nl/sig_len
-    print(f_min)
+
     border = 4
     
     bh, ah = signal.butter(border, f_min, btype = 'highpass', fs=fs)
@@ -182,6 +182,7 @@ def plot_phase_vel(
 ):
     prop_cycle = plt.rcParams['axes.prop_cycle']
     color = prop_cycle.by_key()['color']
+    marker = ['+','s','^','*']
     
     
     phase_vel_line = []
@@ -204,13 +205,13 @@ def plot_phase_vel(
 
     plt.figure()
     for i, line in enumerate(phase_vel_line):
-        plt.plot(line[0], line[1], '+', color=color[i], label=vel_labels[i])
+        plt.scatter(line[0], line[1], marker=marker[i], color=color[i], label=vel_labels[i])
         plt.plot(line[0], line[2], '--', color=color[i])
     plt.legend()
    #plt.title('Зависимость обратной скорости приращения фазы \n сигнала поперек интерференционных полос от времени.')
     plt.xlabel('t(сек)')
     plt.ylabel(r'$T_{инт}$ (пиксель)')
-    plt.title('Зависимость периода интерференции \n от время растекания капли \n при разных скоростях потока. ')
+    plt.title('Зависимость периода интерференции \n от времени растекания капли \n при разных скоростях потока. ')
     plt.show()
 
     return slope, intercept

@@ -150,8 +150,8 @@ def plot_flt_res(sig_list, fs, rel_h, nperseg_c):
         ax[i][1].set_ylabel("фаза [рад]")
 
         ax[i][2].plot(fxx, Pxx_den/np.max(Pxx_den))
-        ax[i][2].hlines(res[1]/np.max(Pxx_den), *Wn, color= 'C2')
-        ax[i][2].plot(w, np.abs(h))
+        #ax[i][2].hlines(res[1]/np.max(Pxx_den), *Wn, color= 'C2')
+        ax[i][2].plot(w, np.abs(h), '--')
         ax[i][2].set_xlim(-0.01, 0.5)
 
         ax[i][2].set_title("Нормированная спектральная плотность и  \n  частотная характеристика фильтра ")
