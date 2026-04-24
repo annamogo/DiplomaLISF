@@ -1,11 +1,15 @@
 # chooses areas of given image and saves them to files .jpg
 
 import numpy as np
+import matplotlib.pyplot as plt
+
 import cv2
 import json
 import os
 import pathlib
 from bresenham import bresenham
+
+from fringe_class import Fringe, FringeList
 
 class Select(object):
 
@@ -95,7 +99,7 @@ class SelectLine(Select):
         
         return self.line_points
 
-    def select_line_from_img(self):
+    def select_line_from_img(self, img=None):
 
         if not self.line_points:
             self.get_line_points()
@@ -103,9 +107,12 @@ class SelectLine(Select):
         x = [point[0] for point in self.line_points]
         y = [point[1] for point in self.line_points]
 
-        self.img_line = self.img[y, x]
-        
-        return self.img_line
+        if img:
+            line = img[x,y]
+            return Fringe(signal=line, fs=1)
+        else:         
+            self.img_line = self.img[y, x]
+            return Fringe(signal = self.img_line, fs=1)
 
 
 class SelectLines():
@@ -114,6 +121,7 @@ class SelectLines():
         self.img_paths = get_imgs_paths(self.dir_path)
         self.line_points = []
         self.lines = []
+        self.lines_num = 0
 
     def get_line_points(self):
         select = SelectLine(self.img_paths[0])
@@ -121,18 +129,80 @@ class SelectLines():
         self.line_points = line_points
         return line_points
 
-    def get_lines_from_imgs(self):
-        for img_path in img_paths:
-            select = SelectLine(img_path)
-            select.set_line_points(self.line_points)
-            line = select.select_line_from_img()
-            self.lines.append(line)
+    def get_lines_from_imgs(self, add=False):
 
-        return self.lines
+        if not add:
+            self.lines = []
+
+        if not self.line_points:
+            self.get_line_points
+            
+        for img_path in self.img_paths:
+
+            img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+            
+            x = [point[0] for point in self.line_points]
+            y = [point[1] for point in self.line_points]
+            
+            self.lines.append(img[y,x])
+
+        self.lines_num = len(self.lines)
+
+        fringe_list = FringeList()
+        fringe_list.fringe_list_from_lines(self.lines)
+
+        return fringe_list
+
+    def plot(self, col_num=3):
+
+        row_num = (self.lines_num - 1)//col_num + 1
+
+        fig, ax = plt.subplots(row_num, col_num, layout='constrained', sharex=True, sharey=True)
+
+        for i in range(self.lines_num):
+            ax[i//col_num][i%col_num].plot(self.lines[i])
+            ax[i//col_num][i%col_num].set_title(f'Number of image: {i}')
         
 
 
 def get_imgs_paths(dir_path):
-    img_paths = [dir_paths + '/'+ f for f in os.listdir(dir_paths) if f.endswith('.jpg')]
+    img_paths = [dir_path + '/'+ f for f in os.listdir(dir_path) if f.endswith('.jpg')]
     img_paths.sort()
     return img_paths
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    

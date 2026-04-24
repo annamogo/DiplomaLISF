@@ -13,17 +13,6 @@ import generate_areas as ga
 
 
 
-class FringeList(Fringe):
-    def __init__(self, fringe_list = None):
-        if fringe_list:
-            self.fringe_list = fringe_list
-        else:
-            self.fringe_list = []
-        self.list_len = len(self.sig_list)
-
-    def
-
-
 class Fringe():
     def __init__(self, signal=None, fs=1):
         self.sig = signal
@@ -99,7 +88,10 @@ class Fringe():
 
 
 
-    def filter_notch_Wn(self, border=4, inplace=True):
+    def filter_notch_Wn(self, border=4, updateWn=True, rel_h=0.5, nperseg_c=1, inplace=True):
+
+        if updateWn or not self.Wn:
+            self.update_Wn(rel_h=rel_h, nperseg_c=nperseg_c)
 
         btype = 'bandpass'
         
@@ -127,6 +119,101 @@ class Fringe():
     @staticmethod
     def phase_vel(ins_ph, dt):
         return np.mean(np.diff(ins_ph)/dt)
+
+
+
+
+class FringeList(Fringe):
+    def __init__(self, fringe_list = None):
+        if fringe_list:
+            self.fringe_list = fringe_list
+        else:
+            self.fringe_list = []
+        self.list_len = len(self.fringe_list)
+        self.frq_list = []
+
+    def append(self, fringe: Fringe):
+        self.fringe_list.append(fringe)
+        self.list_len += 1
+
+    def plot(self, col_num=3):
+
+        row_num = (self.list_len - 1)//col_num + 1
+
+        fig, ax = plt.subplots(row_num, col_num, layout='constrained', sharex=True, sharey=True)
+
+        for i in range(self.list_len):
+            ax[i//col_num][i%col_num].plot(self.fringe_list[i].sig)
+            ax[i//col_num][i%col_num].set_title(f'Number of image: {i}')
+        
+
+    def fringe_list_from_lines(self, line_list):
+
+        for line in line_list:
+            self.fringe_list.append(Fringe(signal=line, fs=1))
+            self.list_len = len(self.fringe_list)
+
+    def filter_low_frq(self,       
+                       nl,      # number of lowerest frequencies filtered 
+                       inplace=True
+                      ):
+        
+        ll = self.list_len
+        if isinstance(nl, list):
+            nl_list = [nl[-1]]*ll
+            nl_list[:min(ll, len(nl))] = nl[:min(ll, len(nl))]
+        elif isinstance(nl, int):
+            nl_list = [nl]*ll
+            
+                
+        # we will use san.my_butter_high to create high pass filter
+        if inplace:
+            for fringe, nl_fr in zip(self.fringe_list, nl_list):
+                fringe.filter_low_frq(nl=nl_fr, inplace=True)
+        else:
+            new_fringe_list = FringeList()
+            
+            for fringe, nl_fr in zip(self.fringe_list, nl_list):
+                new_fringe = fringe.filter_low_frq(nl=nl_fr, inplace=False)
+                new_fringe_list.append(new_fringe) 
+
+            return new_fringe_list
+
+
+# counts the number of peaks in autocorrelation function
+# needed to roughly estimate the frequency of fringes
+
+    def count_peaks_of_autocorr(self, show_corr=False):
+        peak_count_list = []
+        
+        for fringe in self.fringe_list:
+            peak_count =  fringe.count_peaks_of_autocorr(show_corr=show_corr)
+            peak_count_list.append(peak_count)
+
+        return peak_count_list
+
+    
+# filter the signals with notch butterworth filter
+    def filter_notch_Wn(self, border=4,  updateWn=True, rel_h=0.5, nperseg_c=1, inplace=True):
+        if inplace:
+            for fringe in self.fringe_list:
+                fringe.filter_notch_Wn(border=border, updateWn=updateWn, rel_h=rel_h, nperseg_c=nperseg_c, inplace=True)
+        else:
+            new_fringe_list = FringeList()
+            
+            for fringe in self.fringe_list:
+                new_fringe = fringe.filter_notch_Wn(border=border, updateWn=updateWn, rel_h=rel_h, nperseg_c=nperseg_c, inplace=False)
+                new_fringe_list.append(new_fringe)
+
+            return new_fringe_list
+
+
+    def get_frq(self):
+        for fringe in self.fringe_list:
+            self.frq_list.append(fringe.get_frq())
+        return self.frq_list
+        
+
 
 
 # to make peaks more prominent it is nesessary to
