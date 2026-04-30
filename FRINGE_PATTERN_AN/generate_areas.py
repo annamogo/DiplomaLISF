@@ -16,12 +16,121 @@ class Select(object):
     def __init__(self, img_path, win_name):
         self.img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)            
         self.img_line = []
+        self.line_len = 0
         self.win_name = win_name
+
+    def select_roi(self):
+        r = cv2.selectROI("select area", self.img)
+        cv2.destroyAllWindows()
+        
+        return r
+
 
     def dump_to_json(self, json_path):
         pass
+        
+    @staticmethod
+    def get_imgs_paths(dir_path):
+        img_paths = [dir_path + '/'+ f for f in os.listdir(dir_path) if f.endswith('.jpg')]
+        img_paths.sort()
+        return img_paths
+
 
         
+
+class SelectArea(Select):
+    def __init__(self, img_path, win_name='window'):
+        super().__init__(img_path, win_name)
+
+        self.roi = []
+
+    def select_roi(self):
+        r = super().select_roi()
+        
+        self.roi = r
+        return r
+
+    def line_from_img(self, r=None):
+        if r:
+            pass
+        elif self.roi:
+            r = self.roi
+        else:
+            r = self.select_roi()
+
+        cropped_img = img[int(r[1]):int(r[1]+r[3]), 
+                    int(r[0]):int(r[0]+r[2])]
+    
+        img_sum = np.sum(cropped_img, axis=0)
+        img_line = (img_sum - np.mean(img_sum))
+        self.img_line = img_line
+
+        return Fringe(sig=img_line, fs = 1)
+
+
+
+class SelectRNDArea(Select):
+    def __init__(self,img_path, num=0, win_name='window'):
+        super().__init__(img_path, win_name)
+        self.roi = super().select_roi()
+        *_, self.w_min, self.h_min = super().select_roi()
+        self.num = num
+
+        self.roi_list = []
+
+    def get_random_rois(self, num = 0):
+        if num:
+            pass
+        elif self.num:
+            num = self.num
+
+        x00, y00, w_max, h_max = self.roi
+
+        rng = np.random.default_rng()
+        w_list = rng.choice(np.asarray(range(self.w_min, w_max)),size=num)
+        h_list = rng.choice(np.asarray(range(self.h_min, h_max)),size=num)
+        x0_list = np.asarray([rng.choice(range(x00, x00+w)) for w in w_list])
+        y0_list = np.asarray([rng.choice(range(y00, y00+h)) for h in h_list])
+
+        roi_list = np.stack((x0_list, y0_list, w_list, h_list),axis=1)
+        self.roi_list = roi_list
+        
+        return roi_list
+        
+
+class SelectAreas(SelectArea):
+    def __init__(self, dir_path, win_name="window"):
+        self.dir_path = dir_path
+        self.img_paths = self.get_imgs_paths(self.dir_path)
+        self.lines = []
+        self.lines_num = 0
+
+    def get_lines_from_imgs(self):
+        img_line_list = []
+        
+        select = SelectArea(self.img_paths[0])
+        r = select.select_roi()
+
+        for img_path in self.img_paths:
+            img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+
+            cropped_img = img[int(r[1]):int(r[1]+r[3]), 
+                    int(r[0]):int(r[0]+r[2])]
+        
+            img_sum = np.sum(cropped_img, axis=0)
+            img_line = (img_sum - np.mean(img_sum))
+            img_line_list.append(img_line)
+
+        self.lines = img_line_list
+        self.lines_num = len(self.lines)
+
+        fringe_list = FringeList()
+        fringe_list.fringe_list_from_lines(self.lines)
+        
+        return fringe_list
+        
+
+
 
 class SelectLine(Select):
 
@@ -109,16 +218,19 @@ class SelectLine(Select):
 
         if img:
             line = img[x,y]
+            line = line - np.mean(line)
             return Fringe(signal=line, fs=1)
-        else:         
-            self.img_line = self.img[y, x]
+        else: 
+            line = self.img[y, x]
+            self.img_line = line - np.mean(line)
             return Fringe(signal = self.img_line, fs=1)
+
 
 
 class SelectLines():
     def __init__(self, dir_path, win_name='window'):
         self.dir_path = dir_path
-        self.img_paths = get_imgs_paths(self.dir_path)
+        self.img_paths = self.get_imgs_paths(self.dir_path)
         self.line_points = []
         self.lines = []
         self.lines_num = 0
@@ -143,8 +255,11 @@ class SelectLines():
             
             x = [point[0] for point in self.line_points]
             y = [point[1] for point in self.line_points]
+
+            line = img[x,y]
+            line = line - np.mean(line)
             
-            self.lines.append(img[y,x])
+            self.lines.append(line)
 
         self.lines_num = len(self.lines)
 
@@ -165,10 +280,7 @@ class SelectLines():
         
 
 
-def get_imgs_paths(dir_path):
-    img_paths = [dir_path + '/'+ f for f in os.listdir(dir_path) if f.endswith('.jpg')]
-    img_paths.sort()
-    return img_paths
+
 
 
 
