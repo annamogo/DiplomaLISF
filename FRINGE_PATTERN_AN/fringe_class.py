@@ -70,7 +70,7 @@ class Fringe():
         return peak_count
 
 # determins window Wn of notch butterworth filter
-    def update_Wn(self, rel_h, nperseg_c=1, show=True):
+    def update_Wn(self, rel_h, nperseg_c=1, show=False):
         nperseg = int(self.sig_len*nperseg_c)
         
         f, P_den = signal.welch(np.real(self.sig), fs = self.fs, nperseg=nperseg)
@@ -80,7 +80,7 @@ class Fringe():
         width = signal.peak_widths(P_den, [peak], rel_height=rel_h)
 
         Wn = [width[2]*self.fs/2/(f_len-1), width[3]*self.fs/2/(f_len-1)]
-        print(Wn)
+        #print(Wn)
         self.Wn = Wn
 
         if show:

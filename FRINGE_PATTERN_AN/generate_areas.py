@@ -44,10 +44,11 @@ class SelectArea(Select):
 
         self.roi = []
 
-    def select_roi(self):
+    def select_roi(self, save_roi = True):
         r = super().select_roi()
-        
-        self.roi = r
+
+        if save_roi:
+            self.roi = r
         return r
 
     def line_from_img(self, r=None):
@@ -58,6 +59,8 @@ class SelectArea(Select):
         else:
             r = self.select_roi()
 
+        
+        img = self.img
         cropped_img = img[int(r[1]):int(r[1]+r[3]), 
                     int(r[0]):int(r[0]+r[2])]
     
@@ -70,13 +73,14 @@ class SelectArea(Select):
 
 
 class SelectRNDArea(Select):
-    def __init__(self,img_path, num=0, win_name='window'):
+    def __init__(self, img_path, num=0, win_name='window'):
         super().__init__(img_path, win_name)
         self.roi = super().select_roi()
         *_, self.w_min, self.h_min = super().select_roi()
         self.num = num
 
         self.roi_list = []
+        self.lines = []
 
     def get_random_rois(self, num = 0):
         if num:
@@ -96,6 +100,24 @@ class SelectRNDArea(Select):
         self.roi_list = roi_list
         
         return roi_list
+
+    def lines_from_img(self):
+        self.lines = []
+        img = self.img
+
+
+        for r in self.roi_list:
+            cropped_img = img[int(r[1]):int(r[1]+r[3]), 
+                    int(r[0]):int(r[0]+r[2])]
+
+            img_sum = np.sum(cropped_img, axis=0)
+            img_line = (img_sum - np.mean(img_sum))
+            self.lines.append(img_line)
+
+        fringe_list = FringeList()
+        fringe_list.fringe_list_from_lines(self.lines)
+
+        return fringe_list
         
 
 class SelectAreas(SelectArea):
@@ -128,6 +150,8 @@ class SelectAreas(SelectArea):
         fringe_list.fringe_list_from_lines(self.lines)
         
         return fringe_list
+
+
         
 
 
