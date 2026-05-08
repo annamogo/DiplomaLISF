@@ -13,7 +13,7 @@ from fringe_class import Fringe, FringeList
 
 class Select(object):
 
-    def __init__(self, img_path, win_name):
+    def __init__(self, img_path, win_name='window'):
         self.img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)            
         self.img_line = []
         self.line_len = 0
@@ -51,7 +51,12 @@ class SelectArea(Select):
             self.roi = r
         return r
 
-    def line_from_img(self, r=None):
+    def extract(self, r=None):
+        '''
+        This function extracts line 
+        or areas and avarages intencity along vertical axis, which results in a line
+        Returns Fringe or FringeList with Fringe.sig = line
+        '''
         if r:
             pass
         elif self.roi:
@@ -72,11 +77,19 @@ class SelectArea(Select):
 
 
 
-class SelectRNDArea(Select):
-    def __init__(self, img_path, num=0, win_name='window'):
+class SelectRNGArea(Select):
+    def __init__(self, img_path, roi_max=None, roi_min=None, num=0, win_name='window'):
         super().__init__(img_path, win_name)
-        self.roi = super().select_roi()
-        *_, self.w_min, self.h_min = super().select_roi()
+        if roi_max:
+            self.roi = roi_max
+        else:
+            self.roi = super().select_roi()
+
+        if roi_min:
+            *_, self.w_min, self.h_min = roi_min
+        else:
+            *_, self.w_min, self.h_min = super().select_roi()
+            
         self.num = num
 
         self.roi_list = []
@@ -101,7 +114,7 @@ class SelectRNDArea(Select):
         
         return roi_list
 
-    def lines_from_img(self):
+    def extract(self):
         self.lines = []
         img = self.img
 
@@ -127,7 +140,7 @@ class SelectAreas(SelectArea):
         self.lines = []
         self.lines_num = 0
 
-    def get_lines_from_imgs(self):
+    def extract(self):
         img_line_list = []
         
         select = SelectArea(self.img_paths[0])
@@ -232,7 +245,7 @@ class SelectLine(Select):
         
         return self.line_points
 
-    def select_line_from_img(self, img=None):
+    def extract(self, img=None):
 
         if not self.line_points:
             self.get_line_points()
@@ -265,7 +278,7 @@ class SelectLines():
         self.line_points = line_points
         return line_points
 
-    def get_lines_from_imgs(self, add=False):
+    def extract(self, add=False):
 
         if not add:
             self.lines = []

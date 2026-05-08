@@ -155,8 +155,8 @@ class Fringe():
         return self.frq_cos, popt
 
     @staticmethod
-    def func(x, a1, a2, a3, b1, c1, c2):
-        return a1+a2*x+a3*x**2 + b1*np.cos(c1+c2*x)
+    def func(x, a2, a3, b1, c1, c2):
+        return a2*x+a3*x**2 + b1*np.sin(c1+c2*x)
 
     @staticmethod
     def phase_vel(ins_ph, dt):
@@ -290,7 +290,10 @@ class FringeList(Fringe):
         frq_cos_list = []
         popt_cos_list = []
         for fringe, w0 in zip(self.fringe_list, init_guess_w):
-            frq, popt = fringe.get_frq_cos(init_guess=[0,0,0,1,0,w0])
+            amp0 = max(abs(fringe.sig))
+            #print(fringe.sig[0]/amp0)
+            phi0 = np.acos(fringe.sig[0]/amp0)
+            frq, popt = fringe.get_frq_cos(init_guess=[0,0,amp0,phi0,w0])
             frq_cos_list.append(frq)
             popt_cos_list.append(popt)
         self.frq_cos_list = frq_cos_list
