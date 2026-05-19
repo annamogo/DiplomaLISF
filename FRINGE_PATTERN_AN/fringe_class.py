@@ -144,15 +144,19 @@ class Fringe():
     
         return instant_fr
 
-    def get_frq_cos(self, init_guess):
+    def get_frq_cos(self, init_guess=[0,0,0,0,0]):
 
         dist = np.arange(self.sig_len)/self.fs
-        popt, pcov = curve_fit(self.func, dist, self.sig, maxfev=3000, p0=init_guess)
-
-        frq = popt[-1]
-        self.frq_cos = frq
-        self.popt_cos = popt
-        return self.frq_cos, popt
+        try:
+            popt, pcov = curve_fit(self.func, dist, self.sig, maxfev=3000, p0=init_guess)
+        except RuntimeError as e:
+            print(e)
+            return 0
+        else:
+            frq = popt[-1]
+            self.frq_cos = frq
+            self.popt_cos = popt
+            return self.frq_cos, popt
 
     @staticmethod
     def func(x, a2, a3, b1, c1, c2):
@@ -286,16 +290,24 @@ class FringeList(Fringe):
         self.frq_list = frq_list
         return self.frq_list
 
-    def get_frq_cos(self, init_guess_w):
+    def get_frq_cos(self, init_guess_w=None):
+        if not init_guess_w:
+            init_guess_w = [0]*self.list_len
         frq_cos_list = []
         popt_cos_list = []
         for fringe, w0 in zip(self.fringe_list, init_guess_w):
             amp0 = max(abs(fringe.sig))
             #print(fringe.sig[0]/amp0)
             phi0 = np.acos(fringe.sig[0]/amp0)
-            frq, popt = fringe.get_frq_cos(init_guess=[0,0,amp0,phi0,w0])
-            frq_cos_list.append(frq)
-            popt_cos_list.append(popt)
+            try:
+                frq, popt = fringe.get_frq_cos(init_guess=[0,0,amp0,phi0,w0])
+            except:
+                print("can not give frequency")
+                frq_cos_list.append(0)
+                popt_cos_list.append([0,0,0,0,0])
+            else:
+                frq_cos_list.append(frq)
+                popt_cos_list.append(popt)
         self.frq_cos_list = frq_cos_list
         self.popt_cos_list = popt_cos_list
         return self.frq_cos_list
