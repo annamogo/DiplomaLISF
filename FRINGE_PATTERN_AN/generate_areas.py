@@ -73,7 +73,7 @@ class SelectArea(Select):
         img_line = (img_sum - np.mean(img_sum))
         self.img_line = img_line
 
-        return Fringe(sig=img_line, fs = 1)
+        return Fringe(signal=img_line, fs = 1)
 
 
 
