@@ -18,7 +18,10 @@ import generate_areas as ga
 class Fringe():
     def __init__(self, signal=None, fs=1):
         self.sig = signal
-        self.sig_len = len(self.sig)
+        if isinstance(self.sig, np.ndarray):
+            self.sig_len = len(self.sig)
+        else:
+            self.sig_len = 0
         self.fs = fs               # frequency of discretization of the signal
         self.peak_count = 0
         self.Wn = []
@@ -26,10 +29,30 @@ class Fringe():
         self.frq_cos = 0
         self.popt_cos = []
 
-    def plot(self):
+    def plot(self, show_cos=False):
         plt.figure()
         plt.plot(self.sig)
+
+        if show_cos:
+            x = np.linspace(0, self.sig_len,200)
+            plt.plot(x, self.func(x,*self.popt_cos))
         plt.show()
+
+    def to_json(self, json_path):
+
+        json_dir = os.path.dirname(json_path)
+        if json_dir:
+            pathlib.Path(json_dir).mkdir(parents=True, exist_ok=True) 
+
+        with open(json_path, 'w') as f:
+            json.dump(list(self.sig), f)
+
+    def sig_from_json(self, json_path):
+
+        with open(json_path, 'r') as f:
+            self.sig = np.asarray(json.load(f))
+
+        self.sig_len = len(self.sig)
 
         
 # to make peaks more prominent it is nesessary to
@@ -144,11 +167,12 @@ class Fringe():
     
         return instant_fr
 
-    def get_frq_cos(self, init_guess=[0,0,0,0,0]):
+    def get_frq_cos(self, init_guess=[0,0,1,0,0.1], 
+                    bounds=([-np.inf,-np.inf,-np.inf,-np.inf,-np.inf],[np.inf,np.inf,np.inf,np.inf,np.inf])):
 
         dist = np.arange(self.sig_len)/self.fs
         try:
-            popt, pcov = curve_fit(self.func, dist, self.sig, maxfev=3000, p0=init_guess)
+            popt, pcov = curve_fit(self.func, dist, self.sig, maxfev=3000, p0=init_guess, bounds=bounds)
         except RuntimeError as e:
             print(e)
             return 0
