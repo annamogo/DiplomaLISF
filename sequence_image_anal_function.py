@@ -201,7 +201,7 @@ def plot_phase_vel(
                 phase_vel_rev.append(float(ph)-float(ph0))
         
         slope, intercept = np.polyfit(time_f, phase_vel_rev, 1)
-        phase_vel_line.append([time_f, phase_vel_rev, np.array(time_f)*slope + intercept])
+        phase_vel_line.append([time_f, np.array(phase_vel_rev)*2*np.pi, np.array(time_f)*slope*2*np.pi + (intercept)*2*np.pi])
 
     plt.figure()
     for i, line in enumerate(phase_vel_line):
@@ -212,6 +212,7 @@ def plot_phase_vel(
     plt.xlabel('t(сек)')
     plt.ylabel(r'$T_{инт}$ (пиксель)')
     plt.title('Зависимость периода интерференции \n от времени растекания капли \n при разных скоростях потока. ')
+    plt.savefig('IntPeriod_vs_Time.jpg', dpi=150, bbox_inches='tight')
     plt.show()
 
     return slope, intercept
